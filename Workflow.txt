@@ -1,0 +1,55 @@
+name: Retrain & Generate Model Card
+
+on:
+  push:
+    paths:
+      - "data/**"
+      - "train.py"
+      - "privacy_pipeline.py"
+      - "streamline_model_card.py"
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repository
+      - uses: actions/checkout@v4
+
+      # 2️⃣ Setup Python
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # 3️⃣ Cache dependencies
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # 4️⃣ Install dependencies
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # 5️⃣ Run training script
+      - name: Train Model
+        run: python train.py
+
+      # 6️⃣ Generate model card
+      - name: Generate Model Card
+        run: python streamline_model_card.py --auto-generate
+
+      # 7️⃣ Upload artifacts (model + model card)
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-and-card
+          path: |
+            linear_model.pkl
+            generated_cards/
